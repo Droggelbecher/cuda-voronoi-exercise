@@ -2,7 +2,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 
-nano = 10**-9
+ns_to_ms = 10**-6
 
 ns = np.array([128, 512, 1024, 2048])
 
@@ -24,14 +24,14 @@ v02_cmp = v02_ini + v02_set + v02_cmpv
 
 # plt.plot(ns, v01_d2h, label="Device to Host")
 # plt.plot(ns, v01_h2d, label="Host to Device")
-plt.plot(ns, v01_cmp / nano, label="v01 Compute")
-plt.plot(ns, v01_mem / nano, label="v01 Memory Transfers")
-plt.plot(ns, v02_cmp / nano, label="v02 Compute")
-plt.plot(ns, v02_mem / nano, label="v02 Memory Transfers")
+plt.plot(ns, v01_cmp * ns_to_ms, label="v01 Compute")
+plt.plot(ns, v01_mem * ns_to_ms, label="v01 Memory Transfers")
+plt.plot(ns, v02_cmp * ns_to_ms, label="v02 Compute")
+plt.plot(ns, v02_mem * ns_to_ms, label="v02 Memory Transfers")
 plt.legend()
 
 plt.xlabel("# Voronoi Centers")
-plt.ylabel("Time [s]")
+plt.ylabel("Time [ms]")
 plt.grid(True)
 
 plt.savefig("plot.png")
