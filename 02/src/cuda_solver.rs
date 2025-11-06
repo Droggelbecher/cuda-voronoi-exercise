@@ -40,6 +40,8 @@ pub(crate) fn solve_cuda(problem: &VoronoiProblem) -> Result<VoronoiSolution, Bo
     println!("Launching CUDA kernel with map size {:?} and {} voronoi centers", problem.map_size, problem.centers.len());
     println!("blocks: {:?} block dim: {:?}", n_blocks, (BX, BY));
 
+    // First, initialize the whole map with -1 (no valid cell), basically a highly parallel memset
+
     unsafe {
         launch!(
             // n blocks, block size, shared, stream
@@ -53,6 +55,24 @@ pub(crate) fn solve_cuda(problem: &VoronoiProblem) -> Result<VoronoiSolution, Bo
         ).unwrap();
     }
     stream.synchronize()?;
+
+    // Now set the cells directly at voronoi sites to their site id.
+
+    unsafe {
+        launch!(
+            // n blocks, block size, shared, stream
+            module.set_voronoi_sites<<<n_blocks, (BX as u32, BY as u32), 0, stream>>>(
+                d_map.as_device_ptr(),
+                problem.map_size.0,
+                problem.map_size.1,
+                problem.centers.len(),
+                d_centers.as_device_ptr()
+            )
+        ).unwrap();
+    }
+    stream.synchronize()?;
+
+    // Finally, run the actual jump flooding algorithm
 
     let mut d = problem.map_size.0 / 2;
     while d >= 1 {
