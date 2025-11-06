@@ -43,7 +43,7 @@ pub(crate) fn solve_cuda(problem: &VoronoiProblem) -> Result<VoronoiSolution, Bo
     unsafe {
         launch!(
             // n blocks, block size, shared, stream
-            module.voronoi<<<n_blocks, (BX as u32, BY as u32), 0, stream>>>(
+            module.initialize<<<n_blocks, (BX as u32, BY as u32), 0, stream>>>(
                 d_map.as_device_ptr(),
                 problem.map_size.0,
                 problem.map_size.1,
@@ -52,8 +52,27 @@ pub(crate) fn solve_cuda(problem: &VoronoiProblem) -> Result<VoronoiSolution, Bo
             )
         ).unwrap();
     }
-
     stream.synchronize()?;
+
+    let mut d = problem.map_size.0 / 2;
+    while d >= 1 {
+        unsafe {
+            launch!(
+                // n blocks, block size, shared, stream
+                module.voronoi<<<n_blocks, (BX as u32, BY as u32), 0, stream>>>(
+                    d_map.as_device_ptr(),
+                    problem.map_size.0,
+                    problem.map_size.1,
+                    problem.centers.len(),
+                    d_centers.as_device_ptr(),
+                    d
+                )
+            ).unwrap();
+        }
+        stream.synchronize()?;
+
+        d >>= 1;
+    }
 
     let mut map = vec![0; map_size];
     d_map.copy_to(&mut map)?;

@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let problem = VoronoiProblem::new_random(size, size, n_centers);
     let solution = solve_cuda(&problem)?;
 
-    write_image(&problem, &solution, &args[1])?;
+    write_image(&problem, &solution, &format!("{}_{}", &args[1], &args[2]))?;
 
     println!("ok.");
     Ok(())
