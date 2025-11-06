@@ -9,22 +9,24 @@ extern "C" __global__ void initialize(int *cell, int width, int height, int n_ce
 
     int threadIndex = x + y * width;
 
+    cell[threadIndex] = -1;
+}
+
+
+extern "C" __global__ void set_voronoi_sites(int *cell, int width, int height, int n_centers, int *centers)
+{
     // 1. Initialization:
     // If we are at a voronoi site, initialize to that index, otherwise -1
 
-    cell[threadIndex] = -1;
+    int ic = blockIdx.x * blockDim.x + threadIdx.x;
 
-    for (int ic = 0; ic < n_centers; ic++)
-    {
-        int cx = centers[ic * 2];
-        int cy = centers[ic * 2 + 1];
+    if(ic >= n_centers)
+        return;
 
-        if (x == cx && y == cy)
-        {
-            cell[threadIndex] = ic;
-            break;
-        }
-    }
+    int cx = centers[ic * 2];
+    int cy = centers[ic * 2 + 1];
+
+    cell[cx + cy * width] = ic;
 }
 
 extern "C" __global__ void voronoi(int *cell, int width, int height, int n_centers, int *centers, int d)
@@ -82,10 +84,6 @@ extern "C" __global__ void voronoi(int *cell, int width, int height, int n_cente
                     closest_dist_sq = dist_sq;
                     closest_site = ic;
                 }
-            }
-
-            if(threadIndex == 3762) {
-                printf("d=%d x=%d y=%d dx=%d dy=%d ic=%d\n", d, x, y, dx, dy, closest_site);
             }
         }
     }
