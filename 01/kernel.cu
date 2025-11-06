@@ -5,13 +5,16 @@ extern "C" __global__ void voronoi(int* cell, int width, int height, int n_cente
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height) return;
 
-    int i = x + y * width;
+    int threadIndex = x + y * width;
 
-    cell[i] = 0;
-
-    int closest_center = -1;
+    // For 32-bit ints, this is 2**31.
+    // This will not overflow if our map is smaller than 32768 x 32768:
+    //     2 x^2 <= 2^31
+    // <=> x <= sqrt(2^30) == 2^15 == 32768
     int closest_dist_sq = INT_MAX;
 
+    // Iterate through all the centers and choose the closest one.
+    int closest_center = -1;
     for(int ic = 0; ic < n_centers; ic++) {
         int cx = centers[ic * 2];
         int cy = centers[ic * 2 + 1];
@@ -24,5 +27,5 @@ extern "C" __global__ void voronoi(int* cell, int width, int height, int n_cente
         }
     }
 
-    cell[i] = closest_center;
+    cell[threadIndex] = closest_center;
 }
